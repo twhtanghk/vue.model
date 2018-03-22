@@ -11,7 +11,6 @@ module.exports =
   props: [
     'eventBus'
     'baseUrl'
-    'oauth2'
   ]
   methods:
     param: (data) ->

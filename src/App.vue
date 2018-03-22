@@ -1,7 +1,7 @@
 <template>
   <div>
     <authForm :eventBus='eventBus' :oauth2='oauth2' />
-    <model ref='portfolio' :eventBus='eventBus' :oauth2='oauth2' baseUrl='http://172.23.0.3:1337/api/portfolio' />
+    <model ref='portfolio' :eventBus='eventBus' baseUrl='http://172.23.0.3:1337/api/portfolio' />
     <ul id="app">
       <li v-for='i in collection'>{{i}}</li>
     </ul>
