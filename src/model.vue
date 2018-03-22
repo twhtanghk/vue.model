@@ -28,7 +28,7 @@ module.exports =
       valid = (res) =>
         if res.status != 200
           throw new Error res.statusText
-        res
+        res.json()
       _.defaults opts.headers,
         'Content-Type': 'application/json'
       switch method

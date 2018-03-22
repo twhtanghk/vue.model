@@ -27,9 +27,6 @@ module.exports =
   mounted: ->
     @$refs.portfolio.list()
       .then (res) =>
-        res
-          .json()
-          .then (data) =>
-            @collection = data
+        @collection = res
       .catch console.error
 </script>
