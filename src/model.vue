@@ -1,7 +1,11 @@
+<template>
+</template>
+
 <script lang='coffee'>
+_ = require 'lodash'
 Vue = require('vue').default
-Vue.use require('vue.oauth2/plugin').default
-eventBus = require('vue.oauth2/eventBus').default
+Vue.use require('vue.oauth2/src/plugin').default
+eventBus = require('vue.oauth2/src/eventBus').default
 
 module.exports =
   props: [
@@ -9,40 +13,68 @@ module.exports =
     'baseUrl'
     'oauth2'
   ]
-  data: ->
   methods:
     param: (data) ->
       ret = new URLSearchParams()
       for k, v of data
-        set.set k, v
+        ret.set k, v
       ret
-    req: (method, url, data) ->
-      error = (res) ->
+    token: ->
+      new Promise (resolve, reject) =>
+        @eventBus
+          .$emit 'oauth2.getToken'
+          .$on 'oauth2.token', resolve
+          .$on 'oauth2.error', reject
+    req: (method, url, opts) ->
+      valid = (res) =>
         if res.status != 200
           throw new Error res.statusText
         res
+      _.defaults opts.headers,
+        'Content-Type': 'application/json'
       switch method
         when 'GET'
-          if data?
-            url = '#{url}?#{@param data}"
-          fetch url
-            .then error
+          if opts.data?
+            url = "#{url}?#{@param opts.data}"
+          fetch url, headers: opts.headers
+            .then valid
         when 'POST', 'PUT', 'DELETE'
-          fetch url,
+          opts =
             method: method
-            body: modue.exports.param data
-            headers:
-              'Content-Type': 'application/json'
+            headers: opts.headers
+            body: JSON.stringify opts.data
+          fetch url, opts
+            .then valid
         else
           Promise.reject new Error "unknown http method #{method}"
-    list: (opts) ->
-      @req 'GET', @baseUrl, opts
-    read: (id, opts) ->
-      @req 'GET', "#{@baseUrl}/#{id}", opts
+    list: (opts = {}) ->
+      @token()
+        .then (token) =>
+          opts.headers ?= {}
+          _.defaults opts.headers, Authorization: "Bearer #{token}"
+          @req 'GET', @baseUrl, opts
+    read: (id, opts = {}) ->
+      @token()
+        .then (token) =>
+          opts.headers ?= {}
+          _.defaults opts.headers, Authorization: "Bearer #{token}"
+          @req 'GET', "#{@baseUrl}/#{id}", opts
     create: (opts) ->
-      @req 'POST', @baseUrl, opts
+      @token()
+        .then (token) =>
+          opts.headers ?= {}
+          _.defaults opts.headers, Authorization: "Bearer #{token}"
+          @req 'POST', @baseUrl, opts
     update: (id, opts) ->
-      @req 'PUT', "#{@baseUrl}/#{id}", opts
+      @token()
+        .then (token) =>
+          opts.headers ?= {}
+          _.defaults opts.headers, Authorization: "Bearer #{token}"
+          @req 'PUT', "#{@baseUrl}/#{id}", opts
     'delete': (opts) ->
-      @req 'DELETE', "#{@baseUrl}/#{id}", opts
+      @token()
+        .then (token) =>
+          opts.headers ?= {}
+          _.defaults opts.headers, Authorization: "Bearer #{token}"
+          @req 'DELETE', "#{@baseUrl}/#{id}", opts
 </script>
