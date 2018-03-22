@@ -25,7 +25,7 @@ module.exports =
     eventBus: eventBus
     collection: []
   mounted: ->
-    @$refs.portfolio.list()
+    @$refs.portfolio.listAll()
       .then (res) =>
         @collection = res
       .catch console.error

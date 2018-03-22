@@ -18,11 +18,16 @@ module.exports =
       for k, v of data
         ret.set k, v
       ret
-    token: ->
+    token: (opts) ->
+      if opts.headers?.Authorization?
+        return Promise.resolve opts
       new Promise (resolve, reject) =>
         @eventBus
           .$emit 'oauth2.getToken'
-          .$on 'oauth2.token', resolve
+          .$on 'oauth2.token', (token) ->
+            opts.headers ?= {}
+            _.defaults opts.headers, Authorization: "Bearer #{token}"
+            resolve opts
           .$on 'oauth2.error', reject
     req: (method, url, opts) ->
       valid = (res) =>
@@ -46,34 +51,46 @@ module.exports =
             .then valid
         else
           Promise.reject new Error "unknown http method #{method}"
+    count: (opts = {}) ->
+      @token opts
+        .then (opts) =>
+          @req 'GET', "#{@baseUrl}/count", opts
+        .then (res) ->
+          res.count
+    listAll: (opts = {}) ->
+      ret = []
+      @token opts
+        .then (opts) =>
+          @count opts  
+        .then (count) =>
+          skip = 0
+          cond = ->
+            ret.length < count
+          promiseWhile = require 'ya-promise-while'
+          promiseWhile cond, =>
+            @list _.extend(opts, skip: skip)
+              .then (res) ->
+                ret = ret.concat res
+        .then ->
+          ret
     list: (opts = {}) ->
-      @token()
-        .then (token) =>
-          opts.headers ?= {}
-          _.defaults opts.headers, Authorization: "Bearer #{token}"
+      @token opts
+        .then (opts) =>
           @req 'GET', @baseUrl, opts
     read: (id, opts = {}) ->
-      @token()
-        .then (token) =>
-          opts.headers ?= {}
-          _.defaults opts.headers, Authorization: "Bearer #{token}"
+      @token opts
+        .then (opts) =>
           @req 'GET', "#{@baseUrl}/#{id}", opts
-    create: (opts) ->
-      @token()
-        .then (token) =>
-          opts.headers ?= {}
-          _.defaults opts.headers, Authorization: "Bearer #{token}"
+    create: (opts = {}) ->
+      @token opts
+        .then (opts) =>
           @req 'POST', @baseUrl, opts
-    update: (id, opts) ->
-      @token()
-        .then (token) =>
-          opts.headers ?= {}
-          _.defaults opts.headers, Authorization: "Bearer #{token}"
+    update: (id, opts = {}) ->
+      @token opts
+        .then (opts) =>
           @req 'PUT', "#{@baseUrl}/#{id}", opts
-    'delete': (opts) ->
-      @token()
-        .then (token) =>
-          opts.headers ?= {}
-          _.defaults opts.headers, Authorization: "Bearer #{token}"
+    'delete': (opts = {}) ->
+      @token opts
+        .then (opts) =>
           @req 'DELETE', "#{@baseUrl}/#{id}", opts
 </script>
