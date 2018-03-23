@@ -41,8 +41,7 @@ module.exports =
       {next} = gen()
       while true
         {done, value} = await next @collection.length
-        if done
-          return
+        break if done
         for i in value
           @collection.push i
 </script>

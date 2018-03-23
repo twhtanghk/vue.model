@@ -41,13 +41,11 @@ module.exports =
         .then (res) ->
           res.count
     listAll: (opts = {}) -> 
-      token = await @token opts
-      list = (opts) =>
-        @list opts
-      ->
-        next: (skip = 0) ->
+      opts = await @token opts
+      =>
+        next: (skip = 0) =>
           opts.data.skip = skip
-          list opts
+          @list opts
             .then (page) ->
               done: page.length == 0
               value: page
