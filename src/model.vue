@@ -2,6 +2,7 @@
 </template>
 
 <script lang='coffee'>
+co = require 'co'
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
 eventBus = require('vue.oauth2/src/eventBus').default
@@ -39,24 +40,17 @@ module.exports =
           @req 'GET', "#{@baseUrl}/count", opts
         .then (res) ->
           res.count
-    listAll: (opts = {}) ->
-      ret = []
-      @token opts
-        .then (opts) =>
-          @count opts  
-        .then (count) =>
-          opts.data ?= {}
-          opts.data.skip = ret.length
-          cond = ->
-            ret.length < count
-          promiseWhile = require 'ya-promise-while'
-          promiseWhile cond, =>
-            @list opts
-              .then (res) ->
-                ret = ret.concat res
-                opts.data.skip = ret.length
-        .then ->
-          ret
+    listAll: (opts = {}) -> 
+      token = await @token opts
+      list = (opts) =>
+        @list opts
+      ->
+        next: (skip = 0) ->
+          opts.data.skip = skip
+          list opts
+            .then (page) ->
+              done: page.length == 0
+              value: page
     list: (opts = {}) ->
       @token opts
         .then (opts) =>

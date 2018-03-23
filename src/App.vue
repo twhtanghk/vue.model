@@ -32,8 +32,17 @@ module.exports =
       'tags'
     ]
   mounted: ->
-    @$refs.portfolio.listAll data: sort: createdBy: 1
-      .then (res) =>
-        @collection = res
-      .catch console.error
+    gen = await @$refs.portfolio.listAll 
+      data:
+        sort:
+          tags: 1
+          date: 1
+    do =>
+      {next} = gen()
+      while true
+        {done, value} = await next @collection.length
+        if done
+          return
+        for i in value
+          @collection.push i
 </script>
