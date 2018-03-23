@@ -1,10 +1,8 @@
 <template>
-  <div>
+  <div id="app">
     <authForm :eventBus='eventBus' :oauth2='oauth2' />
     <model ref='portfolio' :eventBus='eventBus' baseUrl='http://172.23.0.3:1337/api/portfolio' />
-    <ul id="app">
-      <li v-for='i in collection'>{{i}}</li>
-    </ul>
+    <b-table striped howver :items='collection' :fields='fields' />
   </div>
 </template>
 
@@ -24,8 +22,17 @@ module.exports =
       response_type: 'token'
     eventBus: eventBus
     collection: []
+    fields: [
+      'symbol'
+      'name'
+      'type'
+      'date'
+      'quantity'
+      'price'
+      'tags'
+    ]
   mounted: ->
-    @$refs.portfolio.listAll()
+    @$refs.portfolio.listAll data: sort: createdBy: 1
       .then (res) =>
         @collection = res
       .catch console.error

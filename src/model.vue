@@ -2,7 +2,6 @@
 </template>
 
 <script lang='coffee'>
-_ = require 'lodash'
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
 eventBus = require('vue.oauth2/src/eventBus').default
@@ -13,11 +12,6 @@ module.exports =
     'baseUrl'
   ]
   methods:
-    param: (data) ->
-      ret = new URLSearchParams()
-      for k, v of data
-        ret.set k, v
-      ret
     token: (opts) ->
       if opts.headers?.Authorization?
         return Promise.resolve opts
@@ -26,7 +20,7 @@ module.exports =
           .$emit 'oauth2.getToken'
           .$on 'oauth2.token', (token) ->
             opts.headers ?= {}
-            _.defaults opts.headers, Authorization: "Bearer #{token}"
+            opts.headers.Authorization = "Bearer #{token}"
             resolve opts
           .$on 'oauth2.error', reject
     req: (method, url, opts) ->
@@ -34,23 +28,11 @@ module.exports =
         if res.status != 200
           throw new Error res.statusText
         res.json()
-      _.defaults opts.headers,
-        'Content-Type': 'application/json'
-      switch method
-        when 'GET'
-          if opts.data?
-            url = "#{url}?#{@param opts.data}"
-          fetch url, headers: opts.headers
-            .then valid
-        when 'POST', 'PUT', 'DELETE'
-          opts =
-            method: method
-            headers: opts.headers
-            body: JSON.stringify opts.data
-          fetch url, opts
-            .then valid
-        else
-          Promise.reject new Error "unknown http method #{method}"
+      opts.headers['X-HTTP-Method-Override'] = method
+      opts.method = 'POST'
+      opts.body = JSON.stringify opts.data
+      fetch url, opts
+        .then valid
     count: (opts = {}) ->
       @token opts
         .then (opts) =>
@@ -63,14 +45,16 @@ module.exports =
         .then (opts) =>
           @count opts  
         .then (count) =>
-          skip = 0
+          opts.data ?= {}
+          opts.data.skip = ret.length
           cond = ->
             ret.length < count
           promiseWhile = require 'ya-promise-while'
           promiseWhile cond, =>
-            @list _.extend(opts, skip: skip)
+            @list opts
               .then (res) ->
                 ret = ret.concat res
+                opts.data.skip = ret.length
         .then ->
           ret
     list: (opts = {}) ->
