@@ -2,7 +2,6 @@
 </template>
 
 <script lang='coffee'>
-co = require 'co'
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
 eventBus = require('vue.oauth2/src/eventBus').default
@@ -13,35 +12,35 @@ module.exports =
     'baseUrl'
   ]
   methods:
-    token: (opts) ->
-      if opts.headers?.Authorization?
-        return Promise.resolve opts
+    getToken: ->
       new Promise (resolve, reject) =>
         @eventBus
           .$emit 'oauth2.getToken'
-          .$on 'oauth2.token', (token) ->
-            opts.headers ?= {}
-            opts.headers.Authorization = "Bearer #{token}"
-            resolve opts
+          .$on 'oauth2.token', (token) =>
+            @token = token
+            resolve @token
           .$on 'oauth2.error', reject
+    opts: (opts) ->
+      if opts.headers?.Authorization?
+        return Promise.resolve opts
+      @getToken()
+        .then (token) ->
+          opts.headers ?= {}
+          opts.headers.Authorization = "Bearer #{token}"
+          Promise.resolve opts
     req: (method, url, opts) ->
-      valid = (res) =>
-        if res.status != 200
-          throw new Error res.statusText
-        res.json()
       opts.headers['X-HTTP-Method-Override'] = method
       opts.method = 'POST'
       opts.body = JSON.stringify opts.data
-      fetch url, opts
-        .then valid
+      res = await fetch url, opts
+      if res.status != 200
+        throw new Error res.statusText
+      res.json()
     count: (opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'GET', "#{@baseUrl}/count", opts
-        .then (res) ->
-          res.count
+      {count} = @req 'GET', "#{@baseUrl}/count", await @opts opts
+      count
     listAll: (opts = {}) -> 
-      opts = await @token opts
+      opts = await @opts opts
       =>
         next: (skip = 0) =>
           opts.data.skip = skip
@@ -50,23 +49,13 @@ module.exports =
               done: page.length == 0
               value: page
     list: (opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'GET', @baseUrl, opts
+      @req 'GET', @baseUrl, await @opts opts
     read: (id, opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'GET', "#{@baseUrl}/#{id}", opts
+      @req 'GET', "#{@baseUrl}/#{id}", await @opts opts
     create: (opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'POST', @baseUrl, opts
+      @req 'POST', @baseUrl, await @opts opts
     update: (id, opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'PUT', "#{@baseUrl}/#{id}", opts
+      @req 'PUT', "#{@baseUrl}/#{id}", await @opts opts
     'delete': (opts = {}) ->
-      @token opts
-        .then (opts) =>
-          @req 'DELETE', "#{@baseUrl}/#{id}", opts
+      @req 'DELETE', "#{@baseUrl}/#{id}", await @opts opts
 </script>
