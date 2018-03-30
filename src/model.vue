@@ -15,11 +15,9 @@ module.exports =
     getToken: ->
       new Promise (resolve, reject) =>
         @eventBus
+          .$once 'oauth2.token', resolve
+          .$once 'oauth2.error', reject
           .$emit 'oauth2.getToken'
-          .$on 'oauth2.token', (token) =>
-            @token = token
-            resolve @token
-          .$on 'oauth2.error', reject
     opts: (opts) ->
       if opts.headers?.Authorization?
         return Promise.resolve opts
@@ -27,7 +25,7 @@ module.exports =
         .then (token) ->
           opts.headers ?= {}
           opts.headers.Authorization = "Bearer #{token}"
-          Promise.resolve opts
+          opts
     req: (method, url, opts) ->
       opts.headers['X-HTTP-Method-Override'] = method
       opts.method = 'POST'
@@ -40,9 +38,9 @@ module.exports =
       {count} = @req 'GET', "#{@baseUrl}/count", await @opts opts
       count
     listAll: (opts = {}) -> 
-      opts = await @opts opts
       =>
         next: (skip = 0) =>
+          opts = await @opts opts
           opts.data.skip = skip
           @list opts
             .then (page) ->
