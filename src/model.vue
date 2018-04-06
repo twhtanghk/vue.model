@@ -39,14 +39,22 @@ module.exports =
     format: (data) ->
       data
     fetch: (opts = {}) ->
+      opts.url ?= @baseUrl
       for i in @mw
         opts = await i opts
       opts
-    count: (opts = {}) ->
-      opts.url ?= "#{@baseUrl}/count"
-      opts.method ?= 'GET'
-      {count} = @fetch opts
-      count
+    post: (opts = {}) ->
+      opts.method = 'POST'
+      @format @fetch opts
+    get: (opts = {}) ->
+      opts.method = 'GET'
+      @format @fetch opts
+    put: (opts = {}) ->
+      opts.method = 'PUT'
+      @format @fetch opts
+    del: (opts = {}) ->
+      opts.method = 'DELETE'
+      @fetch opts
     listAll: (opts = {}) -> 
       =>
         next: (skip = 0) =>
@@ -56,27 +64,23 @@ module.exports =
             .then (page) ->
               done: page.length == 0
               value: page
+    count: (opts = {}) ->
+      opts.url ?= "#{@baseUrl}/count"
+      {count} = @get opts
+      count
     list: (opts = {}) ->
-      opts.method = 'GET'
-      opts.url = @baseUrl
-      @fetch opts
-        .map @format
-    read: (id, opts = {}) ->
-      opts.method = 'GET'
-      opts.url = "#{@baseUrl}/#{id}"
-      @format @fetch opts
+      @get opts
     create: (opts = {}) ->
-      opts.method = 'POST'
-      opts.url = @baseUrl
-      @format @fetch opts
+      @post opts
+    read: (id, opts = {}) ->
+      opts.url = "#{@baseUrl}/#{id}"
+      @get opts
     update: (id, opts = {}) ->
-      opts.method = 'PUT'
       opts.url = "#{@baseUrl}/#{id}"
-      @format @fetch opts
+      @put opts
     'delete': (id, opts = {}) ->
-      opts.method = 'DELETE'
       opts.url = "#{@baseUrl}/#{id}"
-      @fetch opts
+      @del opts
   created: ->
     @mw.push @methodOverride
     @mw.push @token
