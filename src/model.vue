@@ -12,7 +12,11 @@ module.exports =
     'baseUrl'
   ]
   data: ->
-    mw: []
+    mw: [
+      @methodOverride
+      @token
+      @req
+    ]
   methods:
     use: (middleware) ->
       @mw.push middleware
@@ -81,8 +85,4 @@ module.exports =
     'delete': (id, opts = {}) ->
       opts.url = "#{@baseUrl}/#{id}"
       @del opts
-  created: ->
-    @mw.push @methodOverride
-    @mw.push @token
-    @mw.push @req
 </script>

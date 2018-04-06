@@ -14,13 +14,12 @@
 Vue = require('vue').default
 Vue.use require('bootstrap-vue').default
 Vue.use require('vue.oauth2/src/plugin').default
-model = require('./model').default
 eventBus = require('vue.oauth2/src/eventBus').default
 
 module.exports =
   components:
     model:
-      extends: model
+      extends: require('./model').default
       methods:
         list: (opts = {}) ->
           opts.method = 'GET'
