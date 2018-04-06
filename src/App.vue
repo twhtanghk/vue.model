@@ -14,10 +14,20 @@
 Vue = require('vue').default
 Vue.use require('bootstrap-vue').default
 Vue.use require('vue.oauth2/src/plugin').default
-Vue.use require('./plugin').default
+model = require('./model').default
 eventBus = require('vue.oauth2/src/eventBus').default
 
 module.exports =
+  components:
+    model:
+      extends: model
+      methods:
+        list: (opts = {}) ->
+          opts.method = 'GET'
+          opts.url = @baseUrl
+          res = await @fetch opts
+          res.results?.map @format
+
   data: ->
     oauth2:
       url: 'https://app.ogcio.gov.hk/auth/oauth2/authorize/'
@@ -36,7 +46,6 @@ module.exports =
       while true
         {done, value} = await next @collection.length
         break if done
-        {count, results} = value
-        for i in results
+        for i in value
           @collection.push i
 </script>
