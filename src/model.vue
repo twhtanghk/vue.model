@@ -11,49 +11,71 @@ module.exports =
     'eventBus'
     'baseUrl'
   ]
+  data: ->
+    mw: []
   methods:
-    getToken: ->
-      new Promise (resolve, reject) =>
+    use: (middleware) ->
+      @mw.push middleware
+    methodOverride: (opts = {}) ->
+      opts.headers ?= {}
+      opts.headers['X-HTTP-Method-Override'] = opts.method
+      opts.method = 'POST'
+      opts.body = JSON.stringify opts.data
+      opts
+    token: (opts = {}) ->
+      token = await do => new Promise (resolve, reject) =>
         @eventBus
           .$once 'oauth2.token', resolve
           .$once 'oauth2.error', reject
           .$emit 'oauth2.getToken'
-    opts: (opts) ->
-      if opts.headers?.Authorization?
-        return Promise.resolve opts
-      @getToken()
-        .then (token) ->
-          opts.headers ?= {}
-          opts.headers.Authorization = "Bearer #{token}"
-          opts
-    req: (method, url, opts) ->
-      opts.headers['X-HTTP-Method-Override'] = method
-      opts.method = 'POST'
-      opts.body = JSON.stringify opts.data
-      res = await fetch url, opts
+      opts.headers ?= {}
+      opts.headers.Authorization = "Bearer #{token}"
+      opts
+    req: (opts = {}) ->
+      res = await fetch opts.url, opts
       if res.status != 200
         throw new Error res.statusText
       res.json()
+    fetch: (opts = {}) ->
+      for i in @mw
+        opts = await i opts
+      opts
     count: (opts = {}) ->
-      {count} = @req 'GET', "#{@baseUrl}/count", await @opts opts
+      opts.url ?= "#{@baseUrl}/count"
+      opts.method ?= 'GET'
+      {count} = @fetch opts
       count
     listAll: (opts = {}) -> 
       =>
         next: (skip = 0) =>
-          opts = await @opts opts
+          opts.data ?= {}
           opts.data.skip = skip
           @list opts
             .then (page) ->
-              done: page.length == 0
+              done: page.results.length == 0
               value: page
     list: (opts = {}) ->
-      @req 'GET', @baseUrl, await @opts opts
+      opts.method = 'GET'
+      opts.url = @baseUrl
+      @fetch opts
     read: (id, opts = {}) ->
-      @req 'GET', "#{@baseUrl}/#{id}", await @opts opts
+      opts.method = 'GET'
+      opts.url = "#{@baseUrl}/#{id}"
+      @fetch opts
     create: (opts = {}) ->
-      @req 'POST', @baseUrl, await @opts opts
+      opts.method = 'POST'
+      opts.url = @baseUrl
+      @fetch opts
     update: (id, opts = {}) ->
-      @req 'PUT', "#{@baseUrl}/#{id}", await @opts opts
-    'delete': (opts = {}) ->
-      @req 'DELETE', "#{@baseUrl}/#{id}", await @opts opts
+      opts.method = 'PUT'
+      opts.url = "#{@baseUrl}/#{id}"
+      @fetch opts
+    'delete': (id, opts = {}) ->
+      opts.method = 'DELETE'
+      opts.url = "#{@baseUrl}/#{id}"
+      @fetch opts
+  created: ->
+    @mw.push @methodOverride
+    @mw.push @token
+    @mw.push @req
 </script>

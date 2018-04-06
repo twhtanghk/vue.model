@@ -1,8 +1,12 @@
 <template>
   <div id="app">
     <authForm :eventBus='eventBus' :oauth2='oauth2' />
-    <model ref='portfolio' :eventBus='eventBus' baseUrl='http://172.23.0.3:1337/api/portfolio' />
-    <b-table striped howver :items='collection' :fields='fields' />
+    <model ref='user' :eventBus='eventBus' baseUrl='https://app.ogcio.gov.hk/im/api/user' />
+    <ul>
+      <li v-for='item in collection' :key='item.id'>
+        {{item.username}}
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -22,26 +26,17 @@ module.exports =
       response_type: 'token'
     eventBus: eventBus
     collection: []
-    fields: [
-      'symbol'
-      'name'
-      'type'
-      'date'
-      'quantity'
-      'price'
-      'tags'
-    ]
   mounted: ->
-    gen = await @$refs.portfolio.listAll 
+    gen = await @$refs.user.listAll 
       data:
         sort:
-          tags: 1
-          date: 1
+          email: 1
     do =>
       {next} = gen()
       while true
         {done, value} = await next @collection.length
         break if done
-        for i in value
+        {count, results} = value
+        for i in results
           @collection.push i
 </script>
