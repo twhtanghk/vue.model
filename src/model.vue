@@ -20,6 +20,18 @@ module.exports =
   methods:
     use: (middleware) ->
       @mw.push middleware
+    form: (opts = {}) ->
+      opts.headers ?= {}
+      opts.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      if opts.data?
+        param = new URLSearchParams()
+        for k, v of opts.data
+          param.set k, v
+        if opts.method == 'GET'
+          opts.url += "?#{param}"
+        else
+          opts.body = param
+      opts
     methodOverride: (opts = {}) ->
       opts.headers ?= {}
       opts.headers['X-HTTP-Method-Override'] = opts.method
