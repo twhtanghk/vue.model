@@ -36,6 +36,8 @@ module.exports =
       if res.status != 200
         throw new Error res.statusText
       res.json()
+    format: (data) ->
+      data
     fetch: (opts = {}) ->
       for i in @mw
         opts = await i opts
@@ -52,24 +54,25 @@ module.exports =
           opts.data.skip = skip
           @list opts
             .then (page) ->
-              done: page.results.length == 0
+              done: page.length == 0
               value: page
     list: (opts = {}) ->
       opts.method = 'GET'
       opts.url = @baseUrl
       @fetch opts
+        .map @format
     read: (id, opts = {}) ->
       opts.method = 'GET'
       opts.url = "#{@baseUrl}/#{id}"
-      @fetch opts
+      @format @fetch opts
     create: (opts = {}) ->
       opts.method = 'POST'
       opts.url = @baseUrl
-      @fetch opts
+      @format @fetch opts
     update: (id, opts = {}) ->
       opts.method = 'PUT'
       opts.url = "#{@baseUrl}/#{id}"
-      @fetch opts
+      @format @fetch opts
     'delete': (id, opts = {}) ->
       opts.method = 'DELETE'
       opts.url = "#{@baseUrl}/#{id}"
