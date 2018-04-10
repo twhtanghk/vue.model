@@ -61,16 +61,32 @@ module.exports =
       opts
     post: (opts = {}) ->
       opts.method = 'POST'
-      @format @fetch opts
+      res = await @fetch opts
+      if Array.isArray res
+        res.map @format
+      else
+        @format res
     get: (opts = {}) ->
       opts.method = 'GET'
-      @format @fetch opts
+      res = await @fetch opts
+      if Array.isArray res
+        res.map @format
+      else
+        @format res
     put: (opts = {}) ->
       opts.method = 'PUT'
-      @format @fetch opts
+      res = await @fetch opts
+      if Array.isArray res
+        res.map @format
+      else
+        @format res
     del: (opts = {}) ->
       opts.method = 'DELETE'
-      @fetch opts
+      res = await @fetch opts
+      if Array.isArray res
+        res.map @format
+      else
+        @format res
     listAll: (opts = {}) -> 
       =>
         next: (skip = 0) =>
