@@ -12,14 +12,16 @@ module.exports =
     'baseUrl'
   ]
   data: ->
+    # default list of middleware to modify req opts
+    # until req is processed by remote end
     mw: [
       @methodOverride
       @token
       @req
+      @res
     ]
   methods:
-    use: (middleware) ->
-      @mw.push middleware
+    # middleware to set opts headers with content-type as x-www-form-urlencoded
     form: (opts = {}) ->
       opts.headers ?= {}
       opts.headers['Content-Type'] = 'application/x-www-form-urlencoded'
@@ -32,12 +34,15 @@ module.exports =
         else
           opts.body = param
       opts
+    # middleware to override req method and allow get with json body data
     methodOverride: (opts = {}) ->
       opts.headers ?= {}
       opts.headers['X-HTTP-Method-Override'] = opts.method
       opts.method = 'POST'
       opts.body = JSON.stringify opts.data
       opts
+    # middleware to acquire token from oauth2 module 
+    # and embed token into req header for oauth2 authorization
     token: (opts = {}) ->
       token = await do => new Promise (resolve, reject) =>
         @eventBus
@@ -47,11 +52,21 @@ module.exports =
       opts.headers ?= {}
       opts.headers.Authorization = "Bearer #{token}"
       opts
+    # middleware to send http req to remote end
+    # and verify result status code
+    # and return json body data
     req: (opts = {}) ->
       res = await fetch opts.url, opts
       if res.status != 200
         throw new Error res.statusText
       res.json()
+    # middleware to format res
+    res: (res) ->
+      if Array.isArray res
+        res.map @format
+      else
+        @format res
+    # default data transformation for extended module to override
     format: (data) ->
       data
     fetch: (opts = {}) ->
@@ -59,34 +74,25 @@ module.exports =
       for i in @mw
         opts = await i opts
       opts
+    upload: (opts = {}) ->
+      opts.method ?= 'POST'
+      formData = new FormData()
+      for file in opts.files
+        formData.append file
+      opts.body = formData
+      res = await @fetch opts
     post: (opts = {}) ->
       opts.method = 'POST'
       res = await @fetch opts
-      if Array.isArray res
-        res.map @format
-      else
-        @format res
     get: (opts = {}) ->
       opts.method = 'GET'
       res = await @fetch opts
-      if Array.isArray res
-        res.map @format
-      else
-        @format res
     put: (opts = {}) ->
       opts.method = 'PUT'
       res = await @fetch opts
-      if Array.isArray res
-        res.map @format
-      else
-        @format res
     del: (opts = {}) ->
       opts.method = 'DELETE'
       res = await @fetch opts
-      if Array.isArray res
-        res.map @format
-      else
-        @format res
     listAll: (opts = {}) -> 
       =>
         next: (skip = 0) =>
