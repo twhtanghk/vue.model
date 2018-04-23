@@ -39,7 +39,8 @@ module.exports =
       opts.headers ?= {}
       opts.headers['X-HTTP-Method-Override'] = opts.method
       opts.method = 'POST'
-      opts.body = JSON.stringify opts.data
+      if not ('body' of opts and opts.body instanceof FormData)
+        opts.body = JSON.stringify opts.data
       opts
     # middleware to acquire token from oauth2 module 
     # and embed token into req header for oauth2 authorization
@@ -59,7 +60,7 @@ module.exports =
       res = await fetch opts.url, opts
       if res.status != 200
         throw new Error res.statusText
-      res.json()
+      await res.json()
     # middleware to format res
     res: (res) ->
       if Array.isArray res
@@ -74,13 +75,6 @@ module.exports =
       for i in @mw
         opts = await i opts
       opts
-    upload: (opts = {}) ->
-      opts.method ?= 'POST'
-      formData = new FormData()
-      for file in opts.files
-        formData.append file
-      opts.body = formData
-      res = await @fetch opts
     post: (opts = {}) ->
       opts.method = 'POST'
       res = await @fetch opts
@@ -106,6 +100,13 @@ module.exports =
       opts.url ?= "#{@baseUrl}/count"
       {count} = @get opts
       count
+    upload: (opts = {}) ->
+      opts.url ?= "#{@baseUrl}/upload"
+      formData = new FormData()
+      for file in opts.files
+        formData.append 'files', file
+      opts.body = formData
+      @post opts
     list: (opts = {}) ->
       @get opts
     create: (opts = {}) ->
