@@ -58,7 +58,7 @@ module.exports =
     # and return json body data
     req: (opts = {}) ->
       res = await fetch opts.url, opts
-      if res.status != 200
+      if res.status not in [200..299]
         throw new Error res.statusText
       await res.json()
     # middleware to format res
