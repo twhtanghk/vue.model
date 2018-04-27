@@ -81,6 +81,9 @@ module.exports =
     get: (opts = {}) ->
       opts.method = 'GET'
       res = await @fetch opts
+    patch: (opts = {}) ->
+      opts.method = 'PATCH'
+      res = await @fetch opts
     put: (opts = {}) ->
       opts.method = 'PUT'
       res = await @fetch opts
@@ -111,13 +114,13 @@ module.exports =
       @get opts
     create: (opts = {}) ->
       @post opts
-    read: (id, opts = {}) ->
-      opts.url = "#{@baseUrl}/#{id}"
+    read: (opts = {}) ->
+      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
       @get opts
-    update: (id, opts = {}) ->
-      opts.url = "#{@baseUrl}/#{id}"
+    update: (opts = {}) ->
+      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
       @put opts
-    'delete': (id, opts = {}) ->
-      opts.url = "#{@baseUrl}/#{id}"
+    'delete': (opts = {}) ->
+      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
       @del opts
 </script>
