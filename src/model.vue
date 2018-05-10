@@ -4,13 +4,17 @@
 <script lang='coffee'>
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
-eventBus = require('vue.oauth2/src/eventBus').default
 
 module.exports =
-  props: [
-    'eventBus'
-    'baseUrl'
-  ]
+  props:
+    baseUrl:
+      type: String
+    eventBus:
+      type: Object
+      default: require('vue.oauth2/src/eventBus').default
+    idAttribute:
+      type: String
+      default: 'id'
   data: ->
     # default list of middleware to modify req opts
     # until req is processed by remote end
@@ -104,23 +108,24 @@ module.exports =
       {count} = @get opts
       count
     upload: (opts = {}) ->
+      opts.method ?= 'POST'
       opts.url ?= "#{@baseUrl}/upload"
       formData = new FormData()
       for file in opts.files
         formData.append 'files', file
       opts.body = formData
-      @post opts
+      @fetch opts
     list: (opts = {}) ->
       @get opts
     create: (opts = {}) ->
       @post opts
     read: (opts = {}) ->
-      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
+      opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
       @get opts
     update: (opts = {}) ->
-      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
+      opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
       @put opts
     'delete': (opts = {}) ->
-      opts.url ?= "#{@baseUrl}/#{opts.data.id}"
+      opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
       @del opts
 </script>
