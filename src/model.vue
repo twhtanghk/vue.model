@@ -96,11 +96,13 @@ module.exports =
       res = await @fetch opts
     listAll: (opts = {}) -> 
       =>
-        next: (skip = 0) =>
+        skip = 0
+        next: =>
           opts.data ?= {}
           opts.data.skip = skip
           @list opts
             .then (page) ->
+              skip += page.length
               done: page.length == 0
               value: page
     count: (opts = {}) ->
