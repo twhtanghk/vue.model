@@ -95,16 +95,21 @@ module.exports =
       opts.method = 'DELETE'
       res = await @fetch opts
     listAll: (opts = {}) -> 
-      =>
+      page = =>
         skip = 0
         next: =>
           opts.data ?= {}
           opts.data.skip = skip
-          @list opts
-            .then (page) ->
-              skip += page.length
-              done: page.length == 0
-              value: page
+          page = await @list opts
+          skip += page.length
+          done: page.length == 0
+          value: page
+      {next} = page()
+      while true
+        {value, done} = await next()
+        break if done
+        for i in value
+          yield i
     count: (opts = {}) ->
       opts.url ?= "#{@baseUrl}/count"
       {count} = @get opts
