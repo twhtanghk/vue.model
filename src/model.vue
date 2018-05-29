@@ -94,21 +94,19 @@ module.exports =
     del: (opts = {}) ->
       opts.method = 'DELETE'
       res = await @fetch opts
-    listAll: (opts = {}) -> 
-      page = =>
-        skip = 0
-        next: =>
-          opts.data ?= {}
-          opts.data.skip = skip
-          page = await @list opts
-          skip += page.length
-          done: page.length == 0
-          value: page
-      {next} = page()
+    iterPage: (opts = {}) ->
+      skip = 0
       while true
-        {value, done} = await next()
-        break if done
-        for i in value
+        opts.data ?= {}
+        opts.data.skip = skip
+        page = await @list opts
+        skip += page.length
+        if page.length == 0
+          break
+        yield page
+    iterAll: (opts = {}) -> 
+      for await page from @iterPage opts
+        for i in page
           yield i
     count: (opts = {}) ->
       opts.url ?= "#{@baseUrl}/count"
