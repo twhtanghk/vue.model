@@ -121,16 +121,16 @@ module.exports =
       opts.body = formData
       @fetch opts
     list: (opts = {}) ->
-      @get opts
+      await @get opts
     create: (opts = {}) ->
-      @post opts
+      await @post opts
     read: (opts = {}) ->
       opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
-      @get opts
+      await @get opts
     update: (opts = {}) ->
       opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
-      @put opts
+      await @put opts
     'delete': (opts = {}) ->
       opts.url ?= "#{@baseUrl}/#{opts.data[@idAttribute]}"
-      @del opts
+      await @del opts
 </script>
