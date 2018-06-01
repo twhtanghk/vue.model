@@ -20,7 +20,6 @@ module.exports =
     # until req is processed by remote end
     mw: [
       @methodOverride
-      @token
       @req
       @res
     ]
@@ -41,7 +40,7 @@ module.exports =
     # middleware to override req method and allow get with json body data
     methodOverride: (opts = {}) ->
       opts.headers ?= {}
-      opts.headers['X-HTTP-Method-Override'] = opts.method
+      opts.headers['X-HTTP-Method-Override'] ?= opts.method
       opts.method = 'POST'
       if not ('body' of opts and opts.body instanceof FormData)
         opts.body = JSON.stringify opts.data
@@ -62,23 +61,34 @@ module.exports =
     # and return json body data
     req: (opts = {}) ->
       res = await fetch opts.url, opts
-      if res.status not in [200..299]
+      if res.status in [200..299]
+        return res
+      else if res.status == 401
+        throw new Error "Unauthorized access"
+      else
         throw new Error res.statusText
-      await res.json()
     # middleware to format res
     res: (res) ->
-      if Array.isArray res
-        res.map @format
+      data = await res.json()
+      if Array.isArray data
+        data.map @format
       else
-        @format res
+        @format data
     # default data transformation for extended module to override
     format: (data) ->
       data
     fetch: (opts = {}) ->
       opts.url ?= @baseUrl
-      for i in @mw
-        opts = await i opts
-      opts
+      try
+        for i in @mw
+          opts = await i opts
+        opts
+      catch err
+        if err.message == 'Unauthorized access'
+          @mw.unshift @token
+          return @fetch opts
+        else
+          throw err
     post: (opts = {}) ->
       opts.method = 'POST'
       res = await @fetch opts
