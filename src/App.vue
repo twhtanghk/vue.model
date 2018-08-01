@@ -12,11 +12,11 @@
 
 <script lang='coffee'>
 Vue = require('vue').default
-Vue.use require('bootstrap-vue').default
+Vue.use require('bootstrap-vue')
 Vue.use require('vue.oauth2/src/plugin').default
 eventBus = require('vue.oauth2/src/eventBus').default
 
-module.exports =
+export default
   components:
     model:
       extends: require('./model').default

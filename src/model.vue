@@ -5,7 +5,7 @@
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
 
-module.exports =
+export default
   props:
     baseUrl:
       type: String
