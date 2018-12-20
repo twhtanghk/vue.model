@@ -19,6 +19,7 @@ export default
     # default list of middleware to modify req opts
     # until req is processed by remote end
     mw: [
+      @json
       @methodOverride
       @req
       @res
@@ -36,6 +37,11 @@ export default
           opts.url += "?#{param}"
         else
           opts.body = param
+      opts
+    # middleware to set opt headers with default content-type as application/json
+    json: (opts = {}) =>
+      opts.headers ?= {}
+      opts.headers['Content-Type'] = 'application/json'
       opts
     # middleware to override req method and allow get with json body data
     methodOverride: (opts = {}) ->
