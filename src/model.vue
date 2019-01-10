@@ -23,6 +23,7 @@ export default
       @methodOverride
       @req
       @res
+      @error 
     ]
   methods:
     # middleware to set opts headers with content-type as x-www-form-urlencoded
@@ -66,20 +67,22 @@ export default
     # and verify result status code
     # and return json body data
     req: (opts = {}) ->
-      res = await fetch opts.url, opts
+      await fetch opts.url, opts
+    error: (res) ->
       if res.status in [200..299]
-        return res
+        return res.data
       else if res.status == 401
         throw new Error "Unauthorized access"
       else
-        throw new Error res.statusText
+        throw new Error "#{res.statusText} #{JSON.stringify res.data}"
     # middleware to format res
     res: (res) ->
-      data = await res.json()
-      if Array.isArray data
-        data.map @format
+      res.data = await res.json()
+      if Array.isArray res.data
+        res.data = res.data.map @format
       else
-        @format data
+        res.data = @format res.data
+      res
     # default data transformation for extended module to override
     format: (data) ->
       data
