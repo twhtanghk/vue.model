@@ -63,6 +63,12 @@ export default
       opts.headers ?= {}
       opts.headers.Authorization = "Bearer #{token}"
       opts
+    # csrf double submit cookie
+    csrf: (opts = {}) ->
+      opts.headers ?= {}
+      opts.headers =
+        'x-csrf-token': document.cookie.match(/csrfToken=(.*);/)?[1]
+      opts
     # middleware to send http req to remote end
     # and verify result status code
     # and return json body data
