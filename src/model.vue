@@ -1,6 +1,3 @@
-<template>
-</template>
-
 <script lang='coffee'>
 Vue = require('vue').default
 Vue.use require('vue.oauth2/src/plugin').default
@@ -83,11 +80,17 @@ export default
         throw new Error "#{res.statusText} #{JSON.stringify res.data}"
     # middleware to format res
     res: (res) ->
-      res.data = await res.json()
-      if Array.isArray res.data
-        res.data = res.data.map @format
-      else
-        res.data = @format res.data
+      {parse} = require 'content-type'
+      {type} = parse res.headers.get 'Content-Type'
+      switch type
+        when 'text/plain'
+          res.data = res.text()
+        when 'application/json'
+          res.data = await res.json()
+          if Array.isArray res.data
+            res.data = res.data.map @format
+          else
+            res.data = @format res.data
       res
     # default data transformation for extended module to override
     format: (data) ->
