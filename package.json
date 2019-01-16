@@ -16,6 +16,7 @@
     "bootstrap-vue": "^2.0.0-rc.2",
     "coffee-loader": "latest",
     "coffeescript": "latest",
+    "content-type": "^1.0.4",
     "node-sass": "^4.7.2",
     "sass-loader": "^6.0.7",
     "vue-template-compiler": "^2.5.13",
