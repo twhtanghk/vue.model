@@ -13,8 +13,7 @@ export default
       type: String
       default: 'id'
   data: ->
-    # default list of middleware to modify req opts
-    # until req is processed by remote end
+    # default list of middleware to modify {req, res}
     mw: [
       @json
       @methodOverride
@@ -24,62 +23,64 @@ export default
     ]
   methods:
     # middleware to set opts headers with content-type as x-www-form-urlencoded
-    form: (opts = {}) ->
-      opts.headers ?= {}
-      opts.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-      if opts.data?
+    form: ({req, res} = {}) ->
+      req.headers ?= {}
+      req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      if req.data?
         param = new URLSearchParams()
-        for k, v of opts.data
+        for k, v of req.data
           param.set k, v
-        if opts.method == 'GET'
-          opts.url += "?#{param}"
+        if req.method == 'GET'
+          req.url += "?#{param}"
         else
-          opts.body = param
-      opts
+          req.body = param
+      {req, res}
     # middleware to set opt headers with default content-type as application/json
-    json: (opts = {}) =>
-      opts.headers ?= {}
-      opts.headers['Content-Type'] = 'application/json'
-      opts
+    json: ({req, res} = {}) =>
+      req.headers ?= {}
+      req.headers['Content-Type'] = 'application/json'
+      {req, res}
     # middleware to override req method and allow get with json body data
-    methodOverride: (opts = {}) ->
-      opts.headers ?= {}
-      opts.headers['X-HTTP-Method-Override'] ?= opts.method
-      opts.method = 'POST'
-      if not ('body' of opts and opts.body instanceof FormData)
-        opts.body = JSON.stringify opts.data
-      opts
+    methodOverride: ({req, res} = {}) ->
+      req.headers ?= {}
+      req.headers['X-HTTP-Method-Override'] ?= req.method
+      req.method = 'POST'
+      if not ('body' of req and req.body instanceof FormData)
+        req.body = JSON.stringify req.data
+      {req, res}
     # middleware to acquire token from oauth2 module 
     # and embed token into req header for oauth2 authorization
-    token: (opts = {}) ->
+    token: ({req, res} = {}) ->
       token = await do => new Promise (resolve, reject) =>
         @eventBus
           .$once 'oauth2.token', resolve
           .$once 'oauth2.error', reject
           .$emit 'oauth2.getToken'
-      opts.headers ?= {}
-      opts.headers.Authorization = "Bearer #{token}"
-      opts
+      req.headers ?= {}
+      req.headers.Authorization = "Bearer #{token}"
+      {req, res}
     # csrf double submit cookie
-    csrf: (opts = {}) ->
-      opts.headers ?= {}
-      opts.headers =
+    csrf: ({req, res}= {}) ->
+      req.headers ?= {}
+      req.headers =
         'x-csrf-token': document.cookie.match(/csrfToken=(.*);/)?[1]
-      opts
+      {req, res}
     # middleware to send http req to remote end
     # and verify result status code
     # and return json body data
-    req: (opts = {}) ->
-      await fetch opts.url, opts
-    error: (res) ->
+    req: ({req, res} = {}) ->
+      res = await fetch req.url, req
+      {req, res}
+    error: ({req, res} = {}) ->
       if res.status in [200..299]
-        return res.data
+        res = res.data
+        {req , res}
       else if res.status == 401
         throw new Error "Unauthorized access"
       else
         throw new Error "#{res.statusText} #{JSON.stringify res.data}"
     # middleware to format res
-    res: (res) ->
+    res: ({req, res} = {}) ->
       {parse} = require 'content-type'
       {type} = parse res.headers.get 'Content-Type'
       switch type
@@ -91,20 +92,22 @@ export default
             res.data = res.data.map @format
           else
             res.data = @format res.data
-      res
+      {req, res}
     # default data transformation for extended module to override
     format: (data) ->
       data
     fetch: (opts = {}) ->
       opts.url ?= @baseUrl
+      {req, res} = {}
+      req = opts
       try
         for i in @mw
-          opts = await i opts
-        opts
+          {req, res} = await i {req, res}
+        res
       catch err
         if err.message == 'Unauthorized access'
           @mw.unshift @token
-          return @fetch opts
+          return await @fetch req
         else
           throw err
     post: (opts = {}) ->
