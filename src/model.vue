@@ -1,14 +1,10 @@
 <script lang='coffee'>
 Vue = require('vue').default
-Vue.use require('vue.oauth2/src/plugin').default
 
 export default
   props:
     baseUrl:
       type: String
-    eventBus:
-      type: Object
-      default: require('vue.oauth2/src/eventBus').default
     idAttribute:
       type: String
       default: 'id'
@@ -47,17 +43,6 @@ export default
       req.method = 'POST'
       if not ('body' of req and req.body instanceof FormData)
         req.body = JSON.stringify req.data
-      {req, res}
-    # middleware to acquire token from oauth2 module 
-    # and embed token into req header for oauth2 authorization
-    token: ({req, res} = {}) ->
-      token = await do => new Promise (resolve, reject) =>
-        @eventBus
-          .$once 'oauth2.token', resolve
-          .$once 'oauth2.error', reject
-          .$emit 'oauth2.getToken'
-      req.headers ?= {}
-      req.headers.Authorization = "Bearer #{token}"
       {req, res}
     # csrf double submit cookie
     csrf: ({req, res}= {}) ->
