@@ -20,7 +20,6 @@
     "node-sass": "^4.7.2",
     "sass-loader": "^6.0.7",
     "vue-template-compiler": "^2.5.13",
-    "vue.oauth2": "https://github.com/twhtanghk/vue.oauth2",
     "ya-promise-while": "^3.0.1"
   },
   "babel": {
